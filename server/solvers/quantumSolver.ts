@@ -292,45 +292,68 @@ export function getRecommendations(items: CartItem[], topN: number = 5): CartIte
 /**
  * Find multiple good subsets within budget (top N)
  * Generates diverse solutions using 7 different strategies
+ * Removes duplicate baskets completely
  */
 export function findTopSubsets(items: CartItem[], budget: number, limit: number = 6): SubsetResult[] {
   const results: SubsetResult[] = [];
   
-  // 1. Classical DP: guaranteed optimal solution
+  // 1. Classical DP: guaranteed optimal solution (DETERMINISTIC)
   results.push(classicalSubsetSolver(items, budget));
   
-  // 2 & 3. Grover's Algorithm with different random seeds for exploration
-  // These will give different results due to randomization in the quantum walk
-  results.push(quantumWalkSolver(items, budget, 1000, 0.3));
-  results.push(quantumWalkSolver(items, budget, 1200, 0.7));
+  // 2, 3, 4. Grover's Algorithm with multiple random runs
+  // Each call will have DIFFERENT random seeds, so should produce DIFFERENT results
+  results.push(quantumWalkSolver(items, budget, 800, 0.2));   // Explore: low bias
+  results.push(quantumWalkSolver(items, budget, 800, 0.5));   // Neutral: medium bias
+  results.push(quantumWalkSolver(items, budget, 800, 0.8));   // Exploit: high bias
   
-  // 4. Greedy: maximize score per cost ratio
+  // 5. Greedy: maximize score per cost ratio
   results.push(greedySubsetSolver(items, budget));
   
-  // 5. Price-optimized: maximize number of items
+  // 6. Price-optimized: maximize number of items
   results.push(priceOptimizedSolver(items, budget));
   
-  // 6. Rating-optimized: prioritize quality
+  // 7. Rating-optimized: prioritize quality
   results.push(ratingOptimizedSolver(items, budget));
   
-  // 7. Discount-optimized: maximize savings
+  // 8. Discount-optimized: maximize savings
   results.push(discountOptimizedSolver(items, budget));
   
-  // Sort by total score (descending), keeping all results
-  return results
+  // Remove EXACT duplicates: same items in same basket
+  const uniqueBaskets: SubsetResult[] = [];
+  for (const basket of results) {
+    const basketKey = basket.items
+      .map(item => item.id)
+      .sort()
+      .join(',');
+    
+    const isDuplicate = uniqueBaskets.some(unique => {
+      const uniqueKey = unique.items
+        .map(item => item.id)
+        .sort()
+        .join(',');
+      return basketKey === uniqueKey;
+    });
+    
+    if (!isDuplicate) {
+      uniqueBaskets.push(basket);
+    }
+  }
+  
+  // Sort by efficiency (score per dollar) - descending
+  return uniqueBaskets
     .sort((a, b) => {
-      // Primary: by total score (higher is better)
-      if (Math.abs(b.totalScore - a.totalScore) > 0.01) {
-        return b.totalScore - a.totalScore;
-      }
-      // Secondary: by efficiency (higher is better)
+      // Primary: by efficiency (higher is better)
       if (Math.abs(b.efficiency - a.efficiency) > 0.01) {
         return b.efficiency - a.efficiency;
+      }
+      // Secondary: by total score (higher is better)
+      if (Math.abs(b.totalScore - a.totalScore) > 0.01) {
+        return b.totalScore - a.totalScore;
       }
       // Tertiary: by cost (lower is better for same score)
       return a.totalCost - b.totalCost;
     })
-    .slice(0, Math.min(limit, results.length));
+    .slice(0, Math.min(limit, uniqueBaskets.length));
 }
 
 /**

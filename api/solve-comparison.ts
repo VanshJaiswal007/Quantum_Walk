@@ -319,42 +319,63 @@ function discountOptimizedSolver(items: CartItem[], budget: number): SubsetResul
 function findTopSubsets(items: CartItem[], budget: number, limit: number = 6): SubsetResult[] {
   const results: SubsetResult[] = [];
 
-  // 1. Classical DP solver
+  // 1. Classical DP solver (DETERMINISTIC)
   results.push(classicalSubsetSolver(items, budget));
 
-  // 2 & 3. Quantum solver with different seed biases for diversity
-  // seedBias 0.3 = prefer lower-score items (explore)
-  // seedBias 0.7 = prefer higher-score items (exploit)
-  results.push(quantumWalkSolver(items, budget, 1000, 0.3));
-  results.push(quantumWalkSolver(items, budget, 1200, 0.7));
+  // 2, 3, 4. Quantum solver with different seed biases
+  // Each call has DIFFERENT randomization, so should produce DIFFERENT results
+  results.push(quantumWalkSolver(items, budget, 800, 0.2));   // Explore: low bias
+  results.push(quantumWalkSolver(items, budget, 800, 0.5));   // Neutral: medium bias
+  results.push(quantumWalkSolver(items, budget, 800, 0.8));   // Exploit: high bias
 
-  // 4. Greedy solver
+  // 5. Greedy solver
   results.push(greedySubsetSolver(items, budget));
 
-  // 5. Price-optimized: maximize number of items
+  // 6. Price-optimized: maximize number of items
   results.push(priceOptimizedSolver(items, budget));
 
-  // 6. Rating-optimized: prioritize highest-rated items
+  // 7. Rating-optimized: prioritize highest-rated items
   results.push(ratingOptimizedSolver(items, budget));
 
-  // 7. Discount-optimized: prioritize items with best discounts
+  // 8. Discount-optimized: prioritize items with best discounts
   results.push(discountOptimizedSolver(items, budget));
 
-  // Sort by total score (descending), then efficiency
-  return results
+  // Remove EXACT duplicates: same items in same basket
+  const uniqueBaskets: SubsetResult[] = [];
+  for (const basket of results) {
+    const basketKey = basket.items
+      .map(item => item.id)
+      .sort()
+      .join(',');
+    
+    const isDuplicate = uniqueBaskets.some(unique => {
+      const uniqueKey = unique.items
+        .map(item => item.id)
+        .sort()
+        .join(',');
+      return basketKey === uniqueKey;
+    });
+    
+    if (!isDuplicate) {
+      uniqueBaskets.push(basket);
+    }
+  }
+
+  // Sort by efficiency (score per dollar) - descending
+  return uniqueBaskets
     .sort((a, b) => {
-      // Primary: by total score (higher is better)
-      if (Math.abs(b.totalScore - a.totalScore) > 0.01) {
-        return b.totalScore - a.totalScore;
-      }
-      // Secondary: by efficiency (higher is better)
+      // Primary: by efficiency (higher is better)
       if (Math.abs(b.efficiency - a.efficiency) > 0.01) {
         return b.efficiency - a.efficiency;
+      }
+      // Secondary: by total score (higher is better)
+      if (Math.abs(b.totalScore - a.totalScore) > 0.01) {
+        return b.totalScore - a.totalScore;
       }
       // Tertiary: by cost (lower is better for same score)
       return a.totalCost - b.totalCost;
     })
-    .slice(0, Math.min(limit, results.length));
+    .slice(0, Math.min(limit, uniqueBaskets.length));
 }
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
