@@ -1,0 +1,87 @@
+import type { CartItem, SubsetResult } from '../context/AppContext';
+
+const API_BASE = '/api';
+
+export async function loadDummyItems(): Promise<CartItem[]> {
+  const response = await fetch(`${API_BASE}/dummy-items`);
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error || 'Failed to load dummy items');
+  return data.items;
+}
+
+export async function parseItems(input: string): Promise<{
+  items: CartItem[];
+  errors: string[];
+}> {
+  const response = await fetch(`${API_BASE}/parse-items`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input }),
+  });
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error || 'Failed to parse items');
+  return { items: data.items, errors: data.errors || [] };
+}
+
+export async function validateItems(items: CartItem[]): Promise<string[]> {
+  const response = await fetch(`${API_BASE}/validate-items`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  });
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error || 'Validation failed');
+  return data.errors || [];
+}
+
+export async function getRecommendations(items: CartItem[], topN: number = 5): Promise<CartItem[]> {
+  const response = await fetch(`${API_BASE}/recommendations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items, topN }),
+  });
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error || 'Failed to get recommendations');
+  return data.recommendations;
+}
+
+export async function solveClassical(items: CartItem[], budget: number): Promise<SubsetResult> {
+  const response = await fetch(`${API_BASE}/solve/classical`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items, budget }),
+  });
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error || 'Classical solver failed');
+  return data.result;
+}
+
+export async function solveQuantum(
+  items: CartItem[],
+  budget: number,
+  iterations: number = 1000
+): Promise<SubsetResult> {
+  const response = await fetch(`${API_BASE}/solve/quantum`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items, budget, iterations }),
+  });
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error || 'Quantum solver failed');
+  return data.result;
+}
+
+export async function solveComparison(
+  items: CartItem[],
+  budget: number,
+  limit: number = 6
+): Promise<SubsetResult[]> {
+  const response = await fetch(`${API_BASE}/solve/comparison`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items, budget, limit }),
+  });
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error || 'Comparison solve failed');
+  return data.topSubsets;
+}
