@@ -129,7 +129,7 @@ export function quantumWalkSolver(
   items: CartItem[],
   budget: number,
   iterations: number = 1000,
-  seedBias: number = 0.5  // Control randomness: 0.5 = default, 0.3 = prefer low-score items, 0.7 = prefer high-score items
+  seedBias: number = 0.5  // Control randomness: 0.5 = default, 0.3 = explore, 0.7 = exploit
 ): SubsetResult {
   if (!items.length || budget <= 0) {
     return {
@@ -147,30 +147,33 @@ export function quantumWalkSolver(
   // Calculate optimal number of Grover iterations: π/4 * √(2^n)
   const n = items.length;
   const optimalIterations = Math.round((Math.PI / 4) * Math.sqrt(Math.pow(2, n)));
-  const groversIterations = Math.min(optimalIterations, iterations);
+  const groversIterations = Math.min(optimalIterations, Math.max(10, iterations));
 
   let bestSubset = new Set<number>();
   let bestScore = 0;
   let bestCost = 0;
-  
-  // Track all candidate solutions for better diversity
-  const candidateSolutions: Array<{ subset: Set<number>; cost: number; score: number }> = [];
 
-  // Grover's Algorithm Amplification Loop
+  // Grover's Algorithm Amplification Loop - run multiple times for diversity
   for (let amp = 0; amp < groversIterations; amp++) {
-    // 1. Initialize superposition: start with random valid subset with bias control
+    // 1. Initialize superposition: random valid subset with bias
     const subset = new Set<number>();
     let currentCost = 0;
     let currentScore = 0;
 
-    // Initialize with equal superposition collapsed to valid state
-    // Use seedBias to control randomness
+    // Use randomized initialization with seedBias influence
     for (let i = 0; i < items.length; i++) {
-      // Adjust probability based on item score and seedBias
-      const scoreInfluence = (itemScores[i] / Math.max(...itemScores)) * (seedBias - 0.5) * 0.4;
-      const probability = 0.5 + scoreInfluence;
+      // Create bias: seedBias controls which items are preferred
+      const itemQuality = itemScores[i] / Math.max(...itemScores);
       
-      if (Math.random() < probability) {
+      // Adjust probability based on seedBias
+      // 0.3 = explore (lower probability for good items)
+      // 0.5 = neutral (50% for all items)
+      // 0.7 = exploit (higher probability for good items)
+      const biasInfluence = (itemQuality - 0.5) * (seedBias - 0.5) * 2;
+      const probability = 0.5 + biasInfluence;
+      const adjustedProb = Math.max(0.1, Math.min(0.9, probability));
+      
+      if (Math.random() < adjustedProb) {
         if (currentCost + items[i].price <= budget) {
           subset.add(i);
           currentCost += items[i].price;
@@ -179,71 +182,85 @@ export function quantumWalkSolver(
       }
     }
 
-    // 2. Oracle: Mark solution states (subsets with high score)
-    // Amplitude amplification via reflection about average
+    // If empty subset, add highest score item within budget
+    if (subset.size === 0) {
+      const sortedByScore = [...items]
+        .map((item, idx) => ({ item, idx, score: itemScores[idx] }))
+        .sort((a, b) => b.score - a.score);
+      
+      for (const {item, idx} of sortedByScore) {
+        if (item.price <= budget) {
+          subset.add(idx);
+          currentCost += item.price;
+          currentScore += itemScores[idx];
+          break;
+        }
+      }
+    }
+
+    // 2. Oracle: Mark solution states
     const avgScore = itemScores.reduce((a, b) => a + b, 0) / items.length;
     
     // 3. Diffusion Operator: Amplify marked states
-    // Phase flip and amplitude amplification
     let improved = true;
     let amplifications = 0;
+    const maxAmplifications = 5;
     
-    while (improved && amplifications < 3) {
+    while (improved && amplifications < maxAmplifications) {
       improved = false;
       amplifications++;
 
-      // Try adding items with score above average (amplitude amplification)
-      for (let i = 0; i < items.length; i++) {
-        if (!subset.has(i) && itemScores[i] > avgScore) {
-          if (currentCost + items[i].price <= budget) {
-            subset.add(i);
-            currentCost += items[i].price;
-            currentScore += itemScores[i];
+      // Try adding high-scoring items
+      const itemsByScore = items
+        .map((item, idx) => ({ item, idx, score: itemScores[idx] }))
+        .sort((a, b) => b.score - a.score);
+
+      for (const {item, idx} of itemsByScore) {
+        if (!subset.has(idx) && itemScores[idx] > avgScore) {
+          if (currentCost + item.price <= budget) {
+            subset.add(idx);
+            currentCost += item.price;
+            currentScore += itemScores[idx];
             improved = true;
           }
         }
       }
 
-      // Try swapping low-score items with high-score ones (interference pattern)
+      // Try swapping: remove low-score items and add high-score items
       if (!improved) {
-        for (let i = 0; i < items.length; i++) {
-          if (subset.has(i)) {
-            for (let j = 0; j < items.length; j++) {
-              if (!subset.has(j)) {
-                const scoreDiff = itemScores[j] - itemScores[i];
-                const costDiff = items[j].price - items[i].price;
+        for (let i = 0; i < Math.min(3, items.length); i++) {
+          const lowScoreIdx = Array.from(subset)
+            .sort((a, b) => itemScores[a] - itemScores[b])[0];
+          
+          if (lowScoreIdx === undefined) break;
+
+          for (let j = 0; j < items.length; j++) {
+            if (!subset.has(j)) {
+              const scoreDiff = itemScores[j] - itemScores[lowScoreIdx];
+              const costDiff = items[j].price - items[lowScoreIdx].price;
+              
+              // Accept if score improves or cost improves significantly
+              if (scoreDiff > 0.01 || (scoreDiff >= 0 && costDiff < -2)) {
+                subset.delete(lowScoreIdx);
+                currentCost -= items[lowScoreIdx].price;
+                currentScore -= itemScores[lowScoreIdx];
                 
-                // Accept swap if score improves or cost is better
-                if ((scoreDiff > 0.001 && currentCost + costDiff <= budget) ||
-                    (scoreDiff >= 0 && costDiff < 0)) {
-                  subset.delete(i);
-                  currentCost -= items[i].price;
-                  currentScore -= itemScores[i];
-                  
-                  subset.add(j);
-                  currentCost += items[j].price;
-                  currentScore += itemScores[j];
-                  
-                  improved = true;
-                  break;
-                }
+                subset.add(j);
+                currentCost += items[j].price;
+                currentScore += itemScores[j];
+                
+                improved = true;
+                break;
               }
             }
-            if (improved) break;
           }
+          if (improved) break;
         }
       }
     }
 
-    // Store as candidate solution
-    candidateSolutions.push({
-      subset: new Set(subset),
-      cost: currentCost,
-      score: currentScore,
-    });
-
-    // 4. Measurement/Collapse: Keep if better (wave function collapse)
-    if (currentScore > bestScore || (currentScore === bestScore && currentCost < bestCost)) {
+    // 4. Measurement: Keep if better
+    if (currentScore > bestScore || (Math.abs(currentScore - bestScore) < 0.01 && currentCost < bestCost)) {
       bestScore = currentScore;
       bestCost = currentCost;
       bestSubset = new Set(subset);

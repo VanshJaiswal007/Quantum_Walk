@@ -1,6 +1,22 @@
 import type { CartItem, SubsetResult } from '../context/AppContext';
 
-const API_BASE = '/api';
+// Detect API base URL based on environment
+const getAPIBase = () => {
+  // In development: frontend is on 5173, backend is on 3000
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    // Check if we're on the frontend port (5173, 5174, etc.)
+    const port = window.location.port;
+    if (port === '5173' || port === '5174' || port === '5175') {
+      return 'http://localhost:3000/api';
+    }
+    return '/api';
+  }
+  // In production (Vercel): use relative path
+  return '/api';
+};
+
+const API_BASE = getAPIBase();
+
 
 export async function loadDummyItems(): Promise<CartItem[]> {
   const response = await fetch(`${API_BASE}/dummy-items`);
