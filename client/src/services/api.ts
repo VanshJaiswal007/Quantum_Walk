@@ -46,7 +46,7 @@ export async function getRecommendations(items: CartItem[], topN: number = 5): P
 }
 
 export async function solveClassical(items: CartItem[], budget: number): Promise<SubsetResult> {
-  const response = await fetch(`${API_BASE}/solve/classical`, {
+  const response = await fetch(`${API_BASE}/solve-classical`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items, budget }),
@@ -61,7 +61,7 @@ export async function solveQuantum(
   budget: number,
   iterations: number = 1000
 ): Promise<SubsetResult> {
-  const response = await fetch(`${API_BASE}/solve/quantum`, {
+  const response = await fetch(`${API_BASE}/solve-quantum`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items, budget, iterations }),
@@ -76,7 +76,7 @@ export async function solveComparison(
   budget: number,
   limit: number = 6
 ): Promise<SubsetResult[]> {
-  const response = await fetch(`${API_BASE}/solve/comparison`, {
+  const response = await fetch(`${API_BASE}/solve-comparison`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items, budget, limit }),
