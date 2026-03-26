@@ -158,6 +158,137 @@ app.post('/solve/comparison', (req: Request, res: Response) => {
   }
 });
 
+// API proxy routes for frontend (with hyphens like Vercel endpoints)
+app.post('/api/solve-classical', (req: Request, res: Response) => {
+  try {
+    const { items, budget } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'Items array required' });
+    }
+
+    if (typeof budget !== 'number' || budget <= 0) {
+      return res.status(400).json({ success: false, error: 'Valid budget required' });
+    }
+
+    const result = classicalSubsetSolver(items, budget);
+    res.json({ success: true, result, solverType: 'classical' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Classical solver failed' });
+  }
+});
+
+app.post('/api/solve-quantum', (req: Request, res: Response) => {
+  try {
+    const { items, budget, iterations } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'Items array required' });
+    }
+
+    if (typeof budget !== 'number' || budget <= 0) {
+      return res.status(400).json({ success: false, error: 'Valid budget required' });
+    }
+
+    const result = quantumWalkSolver(items, budget, iterations || 1000);
+    res.json({ success: true, result, solverType: 'quantum' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Quantum solver failed' });
+  }
+});
+
+app.post('/api/solve-comparison', (req: Request, res: Response) => {
+  try {
+    const { items, budget, limit } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'Items array required' });
+    }
+
+    if (typeof budget !== 'number' || budget <= 0) {
+      return res.status(400).json({ success: false, error: 'Valid budget required' });
+    }
+
+    // Default to 6 baskets, allow up to 10
+    const basketLimit = Math.min(limit || 6, 10);
+    const topSubsets = findTopSubsets(items, budget, basketLimit);
+    
+    res.json({ 
+      success: true, 
+      topSubsets,
+      basketCount: topSubsets.length,
+      algorithms: ['Classical DP', 'Grover Algorithm (2 runs)', 'Greedy', 'Price-Optimized', 'Rating-Optimized', 'Discount-Optimized']
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Comparison solve failed' });
+  }
+});
+
+// API proxy routes for other endpoints
+app.get('/api/dummy-items', (req: Request, res: Response) => {
+  try {
+    const items = getDummyItems();
+    res.json({ success: true, items });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to load dummy items' });
+  }
+});
+
+app.post('/api/parse-items', (req: Request, res: Response) => {
+  try {
+    const { input } = req.body;
+
+    if (!input || typeof input !== 'string') {
+      return res.status(400).json({ success: false, error: 'Input string required' });
+    }
+
+    const { items, errors } = parseCartItems(input);
+
+    if (errors.length > 0 && items.length === 0) {
+      return res.status(400).json({ success: false, errors });
+    }
+
+    res.json({ success: true, items, errors: errors || [] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to parse items' });
+  }
+});
+
+app.post('/api/validate-items', (req: Request, res: Response) => {
+  try {
+    const { items } = req.body;
+
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ success: false, error: 'Items array required' });
+    }
+
+    const errors = validateItems(items);
+
+    res.json({
+      success: errors.length === 0,
+      errors,
+      itemCount: items.length,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Validation failed' });
+  }
+});
+
+app.post('/api/recommendations', (req: Request, res: Response) => {
+  try {
+    const { items, topN = 5 } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'Items array required' });
+    }
+
+    const recommendations = getRecommendations(items, topN);
+    res.json({ success: true, recommendations });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to get recommendations' });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Quantum Budget Optimizer Server running on http://localhost:${PORT}`);

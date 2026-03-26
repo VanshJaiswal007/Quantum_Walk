@@ -128,7 +128,8 @@ export function classicalSubsetSolver(
 export function quantumWalkSolver(
   items: CartItem[],
   budget: number,
-  iterations: number = 1000
+  iterations: number = 1000,
+  seedBias: number = 0.5  // Control randomness: 0.5 = default, 0.3 = prefer low-score items, 0.7 = prefer high-score items
 ): SubsetResult {
   if (!items.length || budget <= 0) {
     return {
@@ -157,14 +158,19 @@ export function quantumWalkSolver(
 
   // Grover's Algorithm Amplification Loop
   for (let amp = 0; amp < groversIterations; amp++) {
-    // 1. Initialize superposition: start with random valid subset
+    // 1. Initialize superposition: start with random valid subset with bias control
     const subset = new Set<number>();
     let currentCost = 0;
     let currentScore = 0;
 
     // Initialize with equal superposition collapsed to valid state
+    // Use seedBias to control randomness
     for (let i = 0; i < items.length; i++) {
-      if (Math.random() < 0.5) {
+      // Adjust probability based on item score and seedBias
+      const scoreInfluence = (itemScores[i] / Math.max(...itemScores)) * (seedBias - 0.5) * 0.4;
+      const probability = 0.5 + scoreInfluence;
+      
+      if (Math.random() < probability) {
         if (currentCost + items[i].price <= budget) {
           subset.add(i);
           currentCost += items[i].price;
@@ -276,9 +282,12 @@ export function findTopSubsets(items: CartItem[], budget: number, limit: number 
   // 1. Classical DP: guaranteed optimal
   results.push(classicalSubsetSolver(items, budget));
   
-  // 2. Grover's Algorithm with multiple iterations for diversity
-  results.push(quantumWalkSolver(items, budget, 500));
-  results.push(quantumWalkSolver(items, budget, 750)); // More iterations = different path
+  // 2. Grover's Algorithm with different seed biases for diversity
+  // seedBias 0.3 = prefer lower-score items (explore)
+  // seedBias 0.5 = neutral/balanced
+  // seedBias 0.7 = prefer higher-score items (exploit)
+  results.push(quantumWalkSolver(items, budget, 500, 0.3));
+  results.push(quantumWalkSolver(items, budget, 750, 0.7)); // Different bias = different exploration
   
   // 3. Greedy approach: best value per dollar
   results.push(greedySubsetSolver(items, budget));

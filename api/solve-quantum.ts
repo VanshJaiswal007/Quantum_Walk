@@ -34,7 +34,7 @@ function computeItemScore(item: CartItem, maxPrice: number): number {
   );
 }
 
-function quantumWalkSolver(items: CartItem[], budget: number, iterations: number = 1000): SubsetResult {
+function quantumWalkSolver(items: CartItem[], budget: number, iterations: number = 1000, seedBias: number = 0.5): SubsetResult {
   if (!items.length || budget <= 0) {
     return { items: [], totalCost: 0, totalScore: 0, itemCount: 0, efficiency: 0 };
   }
@@ -55,8 +55,12 @@ function quantumWalkSolver(items: CartItem[], budget: number, iterations: number
     let currentCost = 0;
     let currentScore = 0;
 
+    // Use seedBias to control randomness
     for (let i = 0; i < items.length; i++) {
-      if (Math.random() < 0.5) {
+      const scoreInfluence = (itemScores[i] / Math.max(...itemScores)) * (seedBias - 0.5) * 0.4;
+      const probability = 0.5 + scoreInfluence;
+      
+      if (Math.random() < probability) {
         if (currentCost + items[i].price <= budget) {
           subset.add(i);
           currentCost += items[i].price;

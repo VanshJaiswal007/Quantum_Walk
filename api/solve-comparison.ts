@@ -92,7 +92,7 @@ function classicalSubsetSolver(items: CartItem[], budget: number): SubsetResult 
   };
 }
 
-function quantumWalkSolver(items: CartItem[], budget: number, iterations: number = 1000): SubsetResult {
+function quantumWalkSolver(items: CartItem[], budget: number, iterations: number = 1000, seedBias: number = 0.5): SubsetResult {
   if (!items.length || budget <= 0) {
     return { items: [], totalCost: 0, totalScore: 0, itemCount: 0, efficiency: 0 };
   }
@@ -113,8 +113,12 @@ function quantumWalkSolver(items: CartItem[], budget: number, iterations: number
     let currentCost = 0;
     let currentScore = 0;
 
+    // Use seedBias to control randomness
     for (let i = 0; i < items.length; i++) {
-      if (Math.random() < 0.5) {
+      const scoreInfluence = (itemScores[i] / Math.max(...itemScores)) * (seedBias - 0.5) * 0.4;
+      const probability = 0.5 + scoreInfluence;
+      
+      if (Math.random() < probability) {
         if (currentCost + items[i].price <= budget) {
           subset.add(i);
           currentCost += items[i].price;
@@ -231,17 +235,27 @@ function findTopSubsets(items: CartItem[], budget: number, limit: number = 6): S
   // Classical DP solver
   results.push(classicalSubsetSolver(items, budget));
 
-  // Quantum solver (2 runs for diversity)
-  results.push(quantumWalkSolver(items, budget, 500));
-  results.push(quantumWalkSolver(items, budget, 500));
+  // Quantum solver with different seed biases for diversity
+  // seedBias 0.3 = prefer lower-score items (explore)
+  // seedBias 0.7 = prefer higher-score items (exploit)
+  results.push(quantumWalkSolver(items, budget, 500, 0.3));
+  results.push(quantumWalkSolver(items, budget, 500, 0.7));
 
   // Greedy solver
   results.push(greedySubsetSolver(items, budget));
 
+  // Remove duplicates (same score and cost)
+  const unique = results.filter((r, idx, arr) => 
+    idx === arr.findIndex(a => 
+      Math.abs(a.totalScore - r.totalScore) < 0.001 && 
+      Math.abs(a.totalCost - r.totalCost) < 0.01
+    )
+  );
+
   // Sort by efficiency and take top results
-  return results
+  return unique
     .sort((a, b) => b.efficiency - a.efficiency)
-    .slice(0, Math.min(limit, results.length));
+    .slice(0, Math.min(limit, unique.length));
 }
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
