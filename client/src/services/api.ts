@@ -6,18 +6,20 @@ const getAPIBase = () => {
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     // Check if we're on the frontend port (5173, 5174, etc.)
     const port = window.location.port;
-    if (port === '5173' || port === '5174' || port === '5175') {
-      return 'http://localhost:3000/api';
+    if (port === '5173' || port === '5174' || port === '5175' || port === '5176') {
+      const apiUrl = 'http://localhost:3000/api';
+      console.log('🔌 Development mode: Using backend API at', apiUrl);
+      return apiUrl;
     }
-    return '/api';
   }
   // In production (Vercel): use relative path
-  return '/api';
+  const apiUrl = '/api';
+  console.log('🌐 Production mode: Using relative API path', apiUrl);
+  return apiUrl;
 };
 
 const API_BASE = getAPIBase();
-
-
+console.log('✅ API_BASE set to:', API_BASE);
 export async function loadDummyItems(): Promise<CartItem[]> {
   const response = await fetch(`${API_BASE}/dummy-items`);
   const data = await response.json();
@@ -92,12 +94,19 @@ export async function solveComparison(
   budget: number,
   limit: number = 6
 ): Promise<SubsetResult[]> {
-  const response = await fetch(`${API_BASE}/solve-comparison`, {
+  const url = `${API_BASE}/solve-comparison`;
+  console.log('📤 Calling comparison solver at:', url);
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items, budget, limit }),
   });
+  if (!response.ok) {
+    console.error('❌ API error:', response.status, response.statusText);
+    throw new Error(`API error: ${response.status} ${response.statusText}`);
+  }
   const data = await response.json();
   if (!data.success) throw new Error(data.error || 'Comparison solve failed');
+  console.log('✅ Received', data.topSubsets?.length || 0, 'baskets');
   return data.topSubsets;
 }

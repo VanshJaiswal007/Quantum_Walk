@@ -229,33 +229,132 @@ function greedySubsetSolver(items: CartItem[], budget: number): SubsetResult {
   };
 }
 
+function priceOptimizedSolver(items: CartItem[], budget: number): SubsetResult {
+  if (!items.length || budget <= 0) {
+    return { items: [], totalCost: 0, totalScore: 0, itemCount: 0, efficiency: 0 };
+  }
+
+  const maxPrice = Math.max(...items.map(i => i.price));
+  const sorted = [...items].sort((a, b) => a.price - b.price);
+
+  let totalCost = 0;
+  let totalScore = 0;
+  const selectedItems: CartItem[] = [];
+
+  for (const item of sorted) {
+    if (totalCost + item.price <= budget) {
+      totalCost += item.price;
+      totalScore += computeItemScore(item, maxPrice);
+      selectedItems.push(item);
+    }
+  }
+
+  return {
+    items: selectedItems,
+    totalCost,
+    totalScore,
+    itemCount: selectedItems.length,
+    efficiency: totalCost > 0 ? totalScore / totalCost : 0,
+  };
+}
+
+function ratingOptimizedSolver(items: CartItem[], budget: number): SubsetResult {
+  if (!items.length || budget <= 0) {
+    return { items: [], totalCost: 0, totalScore: 0, itemCount: 0, efficiency: 0 };
+  }
+
+  const maxPrice = Math.max(...items.map(i => i.price));
+  const sorted = [...items].sort((a, b) => b.rating - a.rating);
+
+  let totalCost = 0;
+  let totalScore = 0;
+  const selectedItems: CartItem[] = [];
+
+  for (const item of sorted) {
+    if (totalCost + item.price <= budget) {
+      totalCost += item.price;
+      totalScore += computeItemScore(item, maxPrice);
+      selectedItems.push(item);
+    }
+  }
+
+  return {
+    items: selectedItems,
+    totalCost,
+    totalScore,
+    itemCount: selectedItems.length,
+    efficiency: totalCost > 0 ? totalScore / totalCost : 0,
+  };
+}
+
+function discountOptimizedSolver(items: CartItem[], budget: number): SubsetResult {
+  if (!items.length || budget <= 0) {
+    return { items: [], totalCost: 0, totalScore: 0, itemCount: 0, efficiency: 0 };
+  }
+
+  const maxPrice = Math.max(...items.map(i => i.price));
+  const sorted = [...items].sort((a, b) => b.discount - a.discount);
+
+  let totalCost = 0;
+  let totalScore = 0;
+  const selectedItems: CartItem[] = [];
+
+  for (const item of sorted) {
+    if (totalCost + item.price <= budget) {
+      totalCost += item.price;
+      totalScore += computeItemScore(item, maxPrice);
+      selectedItems.push(item);
+    }
+  }
+
+  return {
+    items: selectedItems,
+    totalCost,
+    totalScore,
+    itemCount: selectedItems.length,
+    efficiency: totalCost > 0 ? totalScore / totalCost : 0,
+  };
+}
+
 function findTopSubsets(items: CartItem[], budget: number, limit: number = 6): SubsetResult[] {
   const results: SubsetResult[] = [];
 
-  // Classical DP solver
+  // 1. Classical DP solver
   results.push(classicalSubsetSolver(items, budget));
 
-  // Quantum solver with different seed biases for diversity
+  // 2 & 3. Quantum solver with different seed biases for diversity
   // seedBias 0.3 = prefer lower-score items (explore)
   // seedBias 0.7 = prefer higher-score items (exploit)
-  results.push(quantumWalkSolver(items, budget, 500, 0.3));
-  results.push(quantumWalkSolver(items, budget, 500, 0.7));
+  results.push(quantumWalkSolver(items, budget, 1000, 0.3));
+  results.push(quantumWalkSolver(items, budget, 1200, 0.7));
 
-  // Greedy solver
+  // 4. Greedy solver
   results.push(greedySubsetSolver(items, budget));
 
-  // Remove duplicates (same score and cost)
-  const unique = results.filter((r, idx, arr) => 
-    idx === arr.findIndex(a => 
-      Math.abs(a.totalScore - r.totalScore) < 0.001 && 
-      Math.abs(a.totalCost - r.totalCost) < 0.01
-    )
-  );
+  // 5. Price-optimized: maximize number of items
+  results.push(priceOptimizedSolver(items, budget));
 
-  // Sort by efficiency and take top results
-  return unique
-    .sort((a, b) => b.efficiency - a.efficiency)
-    .slice(0, Math.min(limit, unique.length));
+  // 6. Rating-optimized: prioritize highest-rated items
+  results.push(ratingOptimizedSolver(items, budget));
+
+  // 7. Discount-optimized: prioritize items with best discounts
+  results.push(discountOptimizedSolver(items, budget));
+
+  // Sort by total score (descending), then efficiency
+  return results
+    .sort((a, b) => {
+      // Primary: by total score (higher is better)
+      if (Math.abs(b.totalScore - a.totalScore) > 0.01) {
+        return b.totalScore - a.totalScore;
+      }
+      // Secondary: by efficiency (higher is better)
+      if (Math.abs(b.efficiency - a.efficiency) > 0.01) {
+        return b.efficiency - a.efficiency;
+      }
+      // Tertiary: by cost (lower is better for same score)
+      return a.totalCost - b.totalCost;
+    })
+    .slice(0, Math.min(limit, results.length));
 }
 
 export default function handler(req: VercelRequest, res: VercelResponse) {

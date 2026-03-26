@@ -290,51 +290,47 @@ export function getRecommendations(items: CartItem[], topN: number = 5): CartIte
 }
 
 /**
- * Find multiple good subsets within budget (top 6)
- * Generates diverse solutions using multiple strategies and Grover's algorithm
+ * Find multiple good subsets within budget (top N)
+ * Generates diverse solutions using 7 different strategies
  */
 export function findTopSubsets(items: CartItem[], budget: number, limit: number = 6): SubsetResult[] {
   const results: SubsetResult[] = [];
   
-  // 1. Classical DP: guaranteed optimal
+  // 1. Classical DP: guaranteed optimal solution
   results.push(classicalSubsetSolver(items, budget));
   
-  // 2. Grover's Algorithm with different seed biases for diversity
-  // seedBias 0.3 = prefer lower-score items (explore)
-  // seedBias 0.5 = neutral/balanced
-  // seedBias 0.7 = prefer higher-score items (exploit)
-  results.push(quantumWalkSolver(items, budget, 500, 0.3));
-  results.push(quantumWalkSolver(items, budget, 750, 0.7)); // Different bias = different exploration
+  // 2 & 3. Grover's Algorithm with different random seeds for exploration
+  // These will give different results due to randomization in the quantum walk
+  results.push(quantumWalkSolver(items, budget, 1000, 0.3));
+  results.push(quantumWalkSolver(items, budget, 1200, 0.7));
   
-  // 3. Greedy approach: best value per dollar
+  // 4. Greedy: maximize score per cost ratio
   results.push(greedySubsetSolver(items, budget));
   
-  // 4. Price-optimized: maximize items within budget
+  // 5. Price-optimized: maximize number of items
   results.push(priceOptimizedSolver(items, budget));
   
-  // 5. Rating-optimized: prioritize highest-rated items
+  // 6. Rating-optimized: prioritize quality
   results.push(ratingOptimizedSolver(items, budget));
   
-  // 6. Discount-optimized: prioritize items with best discounts
+  // 7. Discount-optimized: maximize savings
   results.push(discountOptimizedSolver(items, budget));
   
-  // Remove duplicates (same score and cost)
-  const unique = results.filter((r, idx, arr) => 
-    idx === arr.findIndex(a => 
-      Math.abs(a.totalScore - r.totalScore) < 0.001 && 
-      Math.abs(a.totalCost - r.totalCost) < 0.01
-    )
-  );
-  
-  // Sort by score (descending) then by efficiency (descending)
-  return unique
+  // Sort by total score (descending), keeping all results
+  return results
     .sort((a, b) => {
-      if (Math.abs(b.totalScore - a.totalScore) > 0.001) {
+      // Primary: by total score (higher is better)
+      if (Math.abs(b.totalScore - a.totalScore) > 0.01) {
         return b.totalScore - a.totalScore;
       }
-      return b.efficiency - a.efficiency;
+      // Secondary: by efficiency (higher is better)
+      if (Math.abs(b.efficiency - a.efficiency) > 0.01) {
+        return b.efficiency - a.efficiency;
+      }
+      // Tertiary: by cost (lower is better for same score)
+      return a.totalCost - b.totalCost;
     })
-    .slice(0, limit);
+    .slice(0, Math.min(limit, results.length));
 }
 
 /**
