@@ -130,8 +130,11 @@ export function getDummyItems(): CartItem[] {
 
 /**
  * Parse cart items from a string in format:
- * name | price | category | rating | discount | priority
+ * name | price | category | rating | discount | review_count
  * One item per line
+ * 
+ * Uses the Amazon-trained ML model to calculate priority/relevance:
+ * relevance = (rating/5 * 0.6) + (log(rating_count)/10 * 0.4)
  */
 export function parseCartItems(input: string): {
   items: CartItem[];
@@ -154,7 +157,7 @@ export function parseCartItems(input: string): {
     const category = parts[2] || 'General';
     const rating = parseFloat(parts[3]) || 4.0;
     const discount = parseFloat(parts[4]) || 0;
-    const priority = parseFloat(parts[5]) || 0.5;
+    const review_count = parseInt(parts[5] || '100'); // Default 100 reviews if not specified
 
     if (!name) {
       errors.push(`Line ${idx + 1}: Item name is required`);
@@ -171,15 +174,16 @@ export function parseCartItems(input: string): {
       return;
     }
 
-    if (discount < 0 || discount > 1) {
-      errors.push(`Line ${idx + 1}: Discount must be between 0 and 1`);
+    if (discount < 0 || discount > 100) {
+      errors.push(`Line ${idx + 1}: Discount must be between 0 and 100 (percentage)`);
       return;
     }
 
-    if (priority < 0 || priority > 1) {
-      errors.push(`Line ${idx + 1}: Priority must be between 0 and 1`);
-      return;
-    }
+    // Calculate priority using ML formula trained on Amazon data
+    // relevance = (rating/5 * 0.6) + (log(rating_count)/10 * 0.4)
+    const ratingComponent = (rating / 5.0) * 0.6;
+    const popularityComponent = (Math.log1p(review_count) / 10) * 0.4;
+    const priority = Math.min(1, Math.max(0, ratingComponent + popularityComponent));
 
     items.push({
       id: `custom_${Date.now()}_${idx}`,
@@ -187,8 +191,8 @@ export function parseCartItems(input: string): {
       price,
       category,
       rating: Math.min(Math.max(rating, 0), 5),
-      discount: Math.min(Math.max(discount, 0), 1),
-      priority: Math.min(Math.max(priority, 0), 1),
+      discount: discount / 100, // Convert percentage to decimal
+      priority, // ML-calculated relevance score
       quantity: 1,
     });
   });

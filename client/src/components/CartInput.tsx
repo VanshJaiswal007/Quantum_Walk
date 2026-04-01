@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { loadDummyItems, parseItems } from '../services/api';
+import { loadAmazonProducts, parseItems } from '../services/api';
 
 export const CartInput: React.FC = () => {
   const { setCart, setLoading, setError } = useApp();
-  const [tab, setTab] = useState<'dummy' | 'manual'>('dummy');
+  const [tab, setTab] = useState<'amazon' | 'manual'>('amazon');
   const [manualInput, setManualInput] = useState('');
   const [parseErrors, setParseErrors] = useState<string[]>([]);
 
-  const handleLoadDummy = async () => {
+  const handleLoadAmazon = async () => {
     try {
       setLoading(true);
       setError(null);
-      const items = await loadDummyItems();
+      const items = await loadAmazonProducts();
       setCart(items);
       setParseErrors([]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dummy items');
+      setError(err instanceof Error ? err.message : 'Failed to load Amazon products');
     } finally {
       setLoading(false);
     }
@@ -47,14 +47,14 @@ export const CartInput: React.FC = () => {
 
       <div className="flex gap-4 mb-6 border-b border-slate-200">
         <button
-          onClick={() => setTab('dummy')}
+          onClick={() => setTab('amazon')}
           className={`py-3 px-6 font-semibold border-b-2 transition-colors ${
-            tab === 'dummy'
+            tab === 'amazon'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-600 hover:text-slate-900'
           }`}
         >
-          📦 Load Sample Data
+          � Load Amazon Data
         </button>
         <button
           onClick={() => setTab('manual')}
@@ -68,16 +68,16 @@ export const CartInput: React.FC = () => {
         </button>
       </div>
 
-      {tab === 'dummy' && (
+      {tab === 'amazon' && (
         <div className="space-y-4">
           <p className="text-slate-600">
-            Click below to load a sample dataset of 12 popular tech items. Perfect for testing!
+            Load real Amazon products trained with ML relevance scores:
           </p>
-          <button onClick={handleLoadDummy} className="btn-primary">
-            Load 12 Sample Items
+          <button onClick={handleLoadAmazon} className="btn-primary w-full">
+            🛒 Load 15 Amazon Products
           </button>
           <p className="text-xs text-slate-500">
-            Includes electronics, accessories, and office supplies with realistic prices and ratings.
+            Real Kaggle data with ML-calculated relevance based on ratings and review count
           </p>
         </div>
       )}
@@ -85,23 +85,23 @@ export const CartInput: React.FC = () => {
       {tab === 'manual' && (
         <div className="space-y-4">
           <p className="text-slate-600 text-sm">
-            Enter items in this format (one per line):
+            Enter items manually. Relevance will be predicted using the Amazon-trained model:
           </p>
           <code className="block bg-slate-100 p-3 rounded text-xs font-mono">
-            Item Name | Price | Category | Rating | Discount | Priority
+            Item Name | Price | Category | Rating | Discount | Review Count
             <br />
-            Example: Headphones | 79.99 | Electronics | 4.5 | 0.15 | 0.8
+            Example: Headphones | 2000 | Electronics | 4.5 | 20 | 5000
           </code>
           
           <textarea
             value={manualInput}
             onChange={(e) => setManualInput(e.target.value)}
-            placeholder="Wireless Headphones | 79.99 | Electronics | 4.5 | 0.15 | 0.8&#10;USB Cable | 19.99 | Accessories | 4.2 | 0.1 | 0.6"
+            placeholder="Wireless Headphones | 2000 | Electronics | 4.5 | 20 | 5000&#10;USB Cable | 500 | Accessories | 4.2 | 10 | 2000"
             className="input-field h-32 font-mono text-sm"
           />
           
           <button onClick={handleParse} className="btn-primary" disabled={!manualInput.trim()}>
-            Parse Items
+            Parse & Predict
           </button>
 
           {parseErrors.length > 0 && (

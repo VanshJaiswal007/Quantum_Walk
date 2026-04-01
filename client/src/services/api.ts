@@ -27,6 +27,29 @@ export async function loadDummyItems(): Promise<CartItem[]> {
   return data.items;
 }
 
+export async function loadAmazonProducts(): Promise<CartItem[]> {
+  const response = await fetch(`${API_BASE}/amazon-products`);
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error || 'Failed to load Amazon products');
+  return data.items;
+}
+
+export async function predictRelevance(
+  price: number,
+  rating: number,
+  discount_percentage: number,
+  rating_count: number
+): Promise<{ relevance_score: number; breakdown: any }> {
+  const response = await fetch(`${API_BASE}/predict-relevance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ price, rating, discount_percentage, rating_count }),
+  });
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error || 'Failed to predict relevance');
+  return { relevance_score: data.relevance_score, breakdown: data.breakdown };
+}
+
 export async function parseItems(input: string): Promise<{
   items: CartItem[];
   errors: string[];

@@ -1,0 +1,42 @@
+{
+  "model_type": "RandomForestRegressor",
+  "n_estimators": 100,
+  "max_depth": 15,
+  "features": [
+    "price",
+    "rating",
+    "review_count",
+    "discount",
+    "in_stock",
+    "prime_eligible",
+    "category_encoded"
+  ],
+  "categories": [
+    "Automotive",
+    "Beauty",
+    "Books",
+    "Clothing",
+    "Electronics",
+    "Groceries",
+    "Home & Kitchen",
+    "Pet Supplies",
+    "Sports",
+    "Toys"
+  ],
+  "performance": {
+    "mse": 0.0002748029212548121,
+    "rmse": 0.016577180739040402,
+    "r2_score": 0.9896299115386082,
+    "test_samples": 400
+  },
+  "feature_importance": {
+    "price": 0.11579651124979666,
+    "rating": 0.8302526428331289,
+    "review_count": 0.02475954636172019,
+    "discount": 0.0,
+    "in_stock": 0.0,
+    "prime_eligible": 0.028816386555397658,
+    "category_encoded": 0.0003749129999564355
+  },
+  "training_date": "2026-04-01T22:26:31.513988"
+}

@@ -1,0 +1,38 @@
+{
+  "model_type": "Relevance Calculator",
+  "features": [
+    "price",
+    "rating",
+    "discount_percentage",
+    "rating_count"
+  ],
+  "target": "relevance_score",
+  "total_products_processed": 498,
+  "top_products": 15,
+  "formula": "relevance = (rating/5 * 0.6) + (log(rating_count)/10 * 0.4)",
+  "data_source": "Amazon Kaggle Dataset",
+  "statistics": {
+    "price_range": [
+      57.89,
+      77990
+    ],
+    "rating_range": [
+      3,
+      5
+    ],
+    "discount_range": [
+      0,
+      91
+    ],
+    "rating_count_range": [
+      5,
+      426973
+    ],
+    "relevance_score_range": [
+      0.5231221532139178,
+      1
+    ],
+    "avg_relevance_score": 0.8313573660468858
+  },
+  "created_at": "2026-04-01T19:08:38.361Z"
+}

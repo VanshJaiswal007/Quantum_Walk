@@ -23,6 +23,7 @@ export interface SubsetResult {
 /**
  * Compute a recommendation score for an item.
  * Weighted formula based on: price, rating, discount, priority, category
+ * Returns score in range 0-100 for better efficiency calculation
  */
 export function computeItemScore(item: CartItem, maxPrice: number): number {
   const normalizedPrice = Math.min(item.price / maxPrice, 1);
@@ -30,15 +31,17 @@ export function computeItemScore(item: CartItem, maxPrice: number): number {
   const discountScore = item.discount; // 0-1
   const priorityScore = item.priority; // 0-1
   
-  // Weighted combination
-  const score =
+  // Weighted combination (0-1)
+  const baseScore =
     (1 - normalizedPrice) * 0.3 +
     ratingScore * 0.25 +
     discountScore * 0.2 +
     priorityScore * 0.15 +
     0.1; // base relevance
   
-  return score;
+  // Scale to 0-100 range for better efficiency metrics
+  // This makes efficiency = value_score / price more meaningful
+  return baseScore * 100;
 }
 
 /**
@@ -140,7 +143,7 @@ export function quantumWalkSolver(
       efficiency: 0,
     };
   }
-
+  
   const maxPrice = Math.max(...items.map(i => i.price));
   const itemScores = items.map(item => computeItemScore(item, maxPrice));
   

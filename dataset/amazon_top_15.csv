@@ -1,0 +1,16 @@
+product_id,product_name,category,price,actual_price,rating,rating_count,discount_percentage,relevance_score,id
+B07KSMBL2H,"AmazonBasics Flexible Premium HDMI Cable (Black, 4K@60Hz, 18Gbps), 3-Foot",Electronics,219,700,4.4,426973,69,1,item_1
+B00NH11KIK,"AmazonBasics USB 2.0 Cable - A-Male to B-Male - for Personal Computer, Printer- 6 Feet (1.8 Meters),",Computers&Accessories,209,695,4.5,107687,70,1,item_2
+B014I8SSD0,"Amazon Basics High-Speed HDMI Cable, 6 Feet - Supports Ethernet, 3D, 4K video,Black",Electronics,309,475,4.4,426973,35,1,item_3
+B014I8SX4Y,"Amazon Basics High-Speed HDMI Cable, 6 Feet (2-Pack),Black",Electronics,309,1400,4.4,426973,78,1,item_4
+B07GPXXNNG,boAt Bassheads 100 in Ear Wired Earphones with Mic(Taffy Pink),Electronics,349,999,4.1,363713,65,1,item_5
+B07GQD4K6L,boAt Bassheads 100 in Ear Wired Earphones with Mic(Furious Red),Electronics,379,999,4.1,363713,62,1,item_6
+B08HV83HL3,MI Power Bank 3i 20000mAh Lithium Polymer 18W Fast Power Delivery Charging | Input- Type C | Micro U,Electronics,2049,2199,4.3,178912,7,0.9997861973260305,item_7
+B08HVL8QN3,"Mi 10000mAH Li-Polymer, Micro-USB and Type C Input Port, Power Bank 3i with 18W Fast Charging (Midni",Electronics,1149,2199,4.3,178912,48,0.9997861973260305,item_8
+B08HVJCW95,MI 10000mAh 3i Lithium Polymer Power Bank Dual Input(Micro-USB and Type C) and Output Ports 18W Fast,Electronics,1149,2199,4.3,178912,48,0.9997861973260305,item_9
+B09GFPVD9Y,"Redmi 9 Activ (Carbon Black, 4GB RAM, 64GB Storage) | Octa-core Helio G35 | 5000 mAh Battery",Electronics,8499,10999,4.1,313836,23,0.9982651608730715,item_10
+B09GFLXVH9,"Redmi 9A Sport (Coral Green, 2GB RAM, 32GB Storage) | 2GHz Octa-core Helio G25 Processor | 5000 mAh ",Electronics,6499,8499,4.1,313836,24,0.9982651608730715,item_11
+B09GFM8CGS,"Redmi 9A Sport (Carbon Black, 2GB RAM, 32GB Storage) | 2GHz Octa-core Helio G25 Processor | 5000 mAh",Electronics,6499,7999,4.1,313832,19,0.9982646510510311,item_12
+B09MT84WV5,Samsung EVO Plus 128GB microSDXC UHS-I U3 130MB/s Full HD & 4K UHD Memory Card with Adapter (MB-MC12,Electronics,1149,3999,4.3,140036,71,0.9899864780955363,item_13
+B09MT6XSFW,Samsung EVO Plus 64GB microSDXC UHS-I U1 130MB/s Full HD & 4K UHD Memory Card with Adapter (MB-MC64K,Electronics,599,1899,4.3,140036,68,0.9899864780955363,item_14
+B00NH13Q8W,"AmazonBasics USB 2.0 Extension Cable for Personal Computer, Printer, 2-Pack - A-Male to A-Female - 3",Computers&Accessories,299,800,4.5,74977,63,0.9889980006461792,item_15
