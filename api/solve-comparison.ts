@@ -25,13 +25,16 @@ function computeItemScore(item: CartItem, maxPrice: number): number {
   const discountScore = item.discount;
   const priorityScore = item.priority;
 
-  return (
+  const baseScore = (
     (1 - normalizedPrice) * 0.3 +
     ratingScore * 0.25 +
     discountScore * 0.2 +
     priorityScore * 0.15 +
     0.1
   );
+  
+  // Scale by 100 for meaningful efficiency metrics
+  return baseScore * 100;
 }
 
 function classicalSubsetSolver(items: CartItem[], budget: number): SubsetResult {
